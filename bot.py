@@ -4,12 +4,16 @@ from discord.ext import commands
 import logging
 import time
 import json
+import database
+import asyncio
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 logger.addHandler(handler)
+
+loop = asyncio.get_event_loop()
 
 TOKEN = 'NTM0ODU2NDAxMzc4NDc2MDQy.Dx_vkw.bIVvr5GumIe0XmOITL1yYzHS7NA'
 
@@ -31,6 +35,7 @@ except FileNotFoundError:
     print("There is no saved categories")
     cat = []
 
+
 Ghakid = 175392863587139584
 Ghakizu = Barbote.get_user(Ghakid)
 
@@ -40,6 +45,7 @@ async def on_ready():
     print(Barbote.user.name)
     print(Barbote.user.id)
     print('--------------')
+    conn = loop.run_until_complete(database.connect())
 
 @Barbote.event
 async def on_member_update(before, after):
@@ -126,4 +132,6 @@ try:
 except (HTTPException, LoginFailure) as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
+finally:
+    loop.run_until_complete(database.disconnect(conn))
 
