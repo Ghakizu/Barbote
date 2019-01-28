@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 from configparser import ConfigParser
 import asyncpg
 import asyncio
@@ -46,8 +46,32 @@ async def disconnect(connection):
         except Exception as error:
             print(error)
 
-def create_table(connection, name):
+async def create_table(connection):
     if connection.is_closed():
-        raise Exception "The connectoin is closed"
+        raise Exception("The connection is closed")
     else:
-        print("Not yet implemented")
+        print('Creating the table...')
+        await connection.execute(
+                '''
+                CREATE TABLE "429792212016955423" 
+                (
+                    cat BIGINT PRIMARY KEY, -- ||
+                    roles   BIGINT ARRAY
+                );
+                ''')
+        print('Table 429792212016955423 created')
+
+async def is_table(connection):
+    if connection.is_closed():
+        raise Exception("The connection is closed")
+    else:
+        print('Checking if the table exist...')
+        r = await connection.fetchrow('''
+        SELECT EXISTS
+        (
+            SELECT 1
+            FROM pg_tables
+            WHERE tablename = '429792212016955423' 
+        );
+        ''')
+        return r[0]

@@ -6,6 +6,7 @@ import time
 import json
 import database
 import asyncio
+import asyncpg
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -21,23 +22,15 @@ act = discord.Activity(type=discord.ActivityType.playing, name=" watching my mas
 Barbote = commands.Bot(command_prefix="?!", description="Hello I'm Barbote !\n I'm useless at this point",
         activity=act)
 
-try:
-    jsondic = open('dico.json', 'r')
-    dic = json.load(jsondic)
-except FileNotFoundError:
-    print("There is no saved dictionnary")
-    dic = {}
-
-try:
-    jsoncat = open('cat.json', 'r')
-    cat = json.load(jsoncat)
-except FileNotFoundError:
-    print("There is no saved categories")
-    cat = []
-
-
 Ghakid = 175392863587139584
 Ghakizu = Barbote.get_user(Ghakid)
+
+async def getallrows(connection):
+    r = await connection.fetch('SELECT * FROM "429792212016955423";')
+    return r 
+
+conn = loop.run_until_complete(database.connect())
+rows = loop.run_until_complete(getallrows(conn))
 
 @Barbote.event
 async def on_ready():
@@ -45,11 +38,11 @@ async def on_ready():
     print(Barbote.user.name)
     print(Barbote.user.id)
     print('--------------')
-    conn = loop.run_until_complete(database.connect())
 
 @Barbote.event
 async def on_member_update(before, after):
-    check(after)
+    if not after.bot:
+        await check(after, rows)
 
 @Barbote.event
 async def on_message(message):
@@ -67,12 +60,14 @@ async def ping(ctx):
     await m.edit(content='Pong! Latency : {}ms'.format(int(ms)))
 
 @Barbote.command()
-async def setrole(ctx, rolesetted:discord.Role, *roles:discord.Role):
-    if rolesetted is not None and len(roles) > 0:
+async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
+    if ctx.guild.id != 429792212016955423:
+        await ctx.send('This command is not implemented for this server.')
+    elif cat is not None and len(roles) > 0:
         print("Number of roles to add : {}".format(len(roles)))
         for x in roles:
             print("{} : {}".format(x, x.id))
-        print(rolesetted)
+        print(cat)
         guild = ctx.guild
         if guild is not None:
             print(guild.name)
@@ -80,13 +75,10 @@ async def setrole(ctx, rolesetted:discord.Role, *roles:discord.Role):
             print("Guild is None")
         try:
             async with ctx.channel.typing():
-                c = addroles(rolesetted, roles)
-            await ctx.send('Done!\n{0} roles added to the category {1}'.format(c,
-                rolesetted.name))
-            for key in dic.keys():
-                print("{} : {}".format(guild.get_role(int(key)).name,
-                    guild.get_role(int(dic.get(key))).name))
-            save(dic)
+                await addroles(ctx, cat.id, roles)
+            await ctx.send('Done!\n Roles added to the category {0}'.format(
+                cat.name))
+            rows = await getallrows(conn)
         except Exception as e:
             await ctx.send("Debug error : {0}".format(e))
             print(e)
@@ -96,36 +88,84 @@ async def setrole(ctx, rolesetted:discord.Role, *roles:discord.Role):
 
 @Barbote.command()
 async def checkuser(ctx, user:discord.Member):
-    ctx.send("Checking {0}...".format(user))
+    await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
-        # TODO
-        ctx.send("Not yet implemented")
+       r =  await check(user, rows)
+    if r:
+        await ctx.send('Done!')
+    else:
+        await ctx.send('There is an error\n Exit code : {0}'.format(r))
 
 @Barbote.command()
 async def checkall(ctx):
-    # TODO
-    ctx.send("Not yet implemented")
-
-def addroles(rolesetted, roles):
+    members = ctx.guild.members
     c = 0
+    e = 0
+    for member in members:
+        try:
+            await ctx.send('Checking {0}...'.format(member.mention))
+            await check(member, rows)
+            c += 1
+        except Exception as s:
+            await ctx.send('Failed to check {0}\n{1}'.format(member.mention, s))
+            e += 1
+            pass
+    await ctx.send("""Done!\n Checked {0} members succesfully\n Failed to check {1}
+            members""".format(c, e))
+
+async def addroles(ctx, cat, roles):
+    # Add in Postgresql
+    b = await database.is_table(conn)
+    print(b)
+    if b == False:
+        await database.create_table(conn)
+    print('Inserting element...')
+    rolesid = []
     for role in roles:
-        if not str(role.id) in dic:
-            dic[str(role.id)] = str(rolesetted.id)
-            c+=1
-    return c
+        rolesid.append(role.id)
+    await conn.execute('''
+            INSERT INTO "429792212016955423"(cat, roles)
+            VALUES($1, $2)
+            ON CONFLICT (cat)
+            DO UPDATE SET roles = array_merge("429792212016955423".roles, $2)''',
+            cat, rolesid)
+    print('Inserted')
 
-def check(user):
-    # TODO
-    pass
+async def check(user, rows):
+    if user.bot:
+        raise Exception("{0} is a bot".format(user.mention))
+    roles = await getroles(user)
+    try:
+        for i in rows:
+            j = 0
+            l = i[1]
+            while j < len(l) and not l[j] in roles:
+                j += 1
+            if j >= len(l):
+                if i[0] in roles:
+                    # Delete cat to user's roles
+                    cat = user.guild.get_role(i[0])
+                    print('Deleting {0} for {1}'.format(cat, user))
+                    await user.remove_roles(cat, reason="""This user have no roles 
+                        from this categorie""")
+            else:
+                if not i[0] in roles:
+                    # Add cat to user's roles
+                    cat = user.guild.get_role(i[0])
+                    print('Adding {0} for {1}'.format(cat, user))
+                    await user.add_roles(cat, reason="""This user have roles 
+                        from this categorie""")
+        return 1
+    except Exception as e:
+        print(e)
+        return 0
 
-def save(dico):
-    for key in dic.keys():
-        if not dic.get(key) in cat:
-            cat.append(dic.get(key))
-    jsondic = open('dico.json', 'w')
-    jsoncat = open('cat.json', 'w')
-    json.dump(dico, jsondic)
-    json.dump(cat, jsoncat)
+async def getroles(user):
+    roles = user.roles
+    r = []
+    for role in roles:
+        r.append(role.id)
+    return r
 
 try:
     Barbote.run(TOKEN)
@@ -134,4 +174,3 @@ except (HTTPException, LoginFailure) as e:
     log.fatal(e)
 finally:
     loop.run_until_complete(database.disconnect(conn))
-
