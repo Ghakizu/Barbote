@@ -1,12 +1,11 @@
 import discord
 from discord.ext import commands
-
 import logging
 import time
-import json
 import database
 import asyncio
 import asyncpg
+import os
 
 logger = logging.getLogger('discord')
 logger.setLevel(logging.DEBUG)
@@ -15,8 +14,6 @@ handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(me
 logger.addHandler(handler)
 
 loop = asyncio.get_event_loop()
-
-TOKEN = 'NTM0ODU2NDAxMzc4NDc2MDQy.Dx_vkw.bIVvr5GumIe0XmOITL1yYzHS7NA'
 
 act = discord.Activity(type=discord.ActivityType.playing, name=" watching my master developping me UwU")
 Barbote = commands.Bot(command_prefix="?!", description="Hello I'm Barbote !\n I'm useless at this point",
@@ -41,7 +38,7 @@ async def on_ready():
 
 @Barbote.event
 async def on_member_update(before, after):
-    if not after.bot:
+    if not after.bot and before.roles != after.roles:
         await check(after, rows)
 
 @Barbote.event
@@ -53,6 +50,11 @@ async def on_message(message):
         await Barbote.Ghakizu.dm_channel.send(m)
     await Barbote.process_commands(message)
 
+@Barbote.event
+async def on_command_error(ctx, error):
+    await ctx.send("There is an error!\n{0}".format(error))
+    log.error(error)
+
 @Barbote.command()
 async def ping(ctx):
     m = await ctx.send("Pong!")
@@ -60,6 +62,7 @@ async def ping(ctx):
     await m.edit(content='Pong! Latency : {}ms'.format(int(ms)))
 
 @Barbote.command()
+@commands.has_role(535096760389861396)
 async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
     if ctx.guild.id != 429792212016955423:
         await ctx.send('This command is not implemented for this server.')
@@ -87,6 +90,7 @@ async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
         ctx.send("Error : Not enought argument")
 
 @Barbote.command()
+@commands.has_role(535096760389861396)
 async def checkuser(ctx, user:discord.Member):
     await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
@@ -97,6 +101,7 @@ async def checkuser(ctx, user:discord.Member):
         await ctx.send('There is an error\n Exit code : {0}'.format(r))
 
 @Barbote.command()
+@commands.has_role(535096760389861396)
 async def checkall(ctx):
     members = ctx.guild.members
     c = 0
@@ -168,7 +173,7 @@ async def getroles(user):
     return r
 
 try:
-    Barbote.run(TOKEN)
+    Barbote.run(os.environ['BARBOTETOKEN'], bot=True, reconnect=True)
 except (HTTPException, LoginFailure) as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
