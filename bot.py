@@ -62,7 +62,7 @@ async def ping(ctx):
     await m.edit(content='Pong! Latency : {}ms'.format(int(ms)))
 
 @Barbote.command()
-@commands.has_role(535096760389861396)
+@commands.has_permissions(manage_roles=True)
 async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
     if ctx.guild.id != 429792212016955423:
         await ctx.send('This command is not implemented for this server.')
@@ -90,7 +90,7 @@ async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
         ctx.send("Error : Not enought argument")
 
 @Barbote.command()
-@commands.has_role(535096760389861396)
+@commands.has_permissions(manage_roles=True)
 async def checkuser(ctx, user:discord.Member):
     await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
@@ -141,25 +141,31 @@ async def check(user, rows):
         raise Exception("{0} is a bot".format(user.mention))
     roles = await getroles(user)
     try:
-        for i in rows:
+        i = 0
+        b = True
+        while i < len(rows) and b:
+            rl = rows[i]
             j = 0
-            l = i[1]
+            l = rl[1]
             while j < len(l) and not l[j] in roles:
                 j += 1
             if j >= len(l):
-                if i[0] in roles:
+                if rl[0] in roles:
                     # Delete cat to user's roles
-                    cat = user.guild.get_role(i[0])
+                    cat = user.guild.get_role(rl[0])
                     print('Deleting {0} for {1}'.format(cat, user))
                     await user.remove_roles(cat, reason="""This user have no roles 
                         from this categorie""")
+                    b = False
             else:
-                if not i[0] in roles:
+                if not rl[0] in roles:
                     # Add cat to user's roles
-                    cat = user.guild.get_role(i[0])
+                    cat = user.guild.get_role(rl[0])
                     print('Adding {0} for {1}'.format(cat, user))
                     await user.add_roles(cat, reason="""This user have roles 
                         from this categorie""")
+                    b = False
+            i += 1
         return 1
     except Exception as e:
         print(e)
