@@ -7,16 +7,17 @@ import asyncio
 import asyncpg
 import os
 
-logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
+log = logging.getLogger('discord')
+log.setLevel(logging.INFO)
 handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
+log.addHandler(handler)
 
 loop = asyncio.get_event_loop()
 
 act = discord.Activity(type=discord.ActivityType.playing, name=" watching my master developping me UwU")
-Barbote = commands.Bot(command_prefix="?!", description="Hello I'm Barbote !\n I'm useless at this point",
+Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
+        I'm here to manage the role banner""",
         activity=act)
 
 Ghakid = 175392863587139584
@@ -85,7 +86,7 @@ async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
         except Exception as e:
             await ctx.send("Debug error : {0}".format(e))
             print(e)
-            logger.fatal(e)
+            log.fatal(e)
     else:
         ctx.send("Error : Not enought argument")
 
@@ -121,7 +122,6 @@ async def checkall(ctx):
 async def addroles(ctx, cat, roles):
     # Add in Postgresql
     b = await database.is_table(conn)
-    print(b)
     if b == False:
         await database.create_table(conn)
     print('Inserting element...')
@@ -153,7 +153,8 @@ async def check(user, rows):
                 if rl[0] in roles:
                     # Delete cat to user's roles
                     cat = user.guild.get_role(rl[0])
-                    print('Deleting {0} for {1}'.format(cat, user))
+                    s = 'Deleting {0} for {1}'.format(cat, user)
+                    log.info(s)
                     await user.remove_roles(cat, reason="""This user have no roles 
                         from this categorie""")
                     b = False
@@ -161,7 +162,8 @@ async def check(user, rows):
                 if not rl[0] in roles:
                     # Add cat to user's roles
                     cat = user.guild.get_role(rl[0])
-                    print('Adding {0} for {1}'.format(cat, user))
+                    s = 'Adding {0} for {1}'.format(cat, user)
+                    log.info(s)
                     await user.add_roles(cat, reason="""This user have roles 
                         from this categorie""")
                     b = False
