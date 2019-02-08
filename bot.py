@@ -58,6 +58,8 @@ async def on_command_error(ctx, error):
 
 @Barbote.command()
 async def ping(ctx):
+    """Do I really need to explain this ?
+    """
     m = await ctx.send("Pong!")
     ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
     await m.edit(content='Pong! Latency : {}ms'.format(int(ms)))
@@ -65,6 +67,8 @@ async def ping(ctx):
 @Barbote.command()
 @commands.has_permissions(manage_roles=True)
 async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
+    """Set a list of roles for a category of roles
+    """
     if ctx.guild.id != 429792212016955423:
         await ctx.send('This command is not implemented for this server.')
     elif cat is not None and len(roles) > 0:
@@ -93,6 +97,8 @@ async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
 @Barbote.command()
 @commands.has_permissions(manage_roles=True)
 async def checkuser(ctx, user:discord.Member):
+    """Check and update an user
+    """
     await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
        r =  await check(user, rows)
@@ -104,6 +110,9 @@ async def checkuser(ctx, user:discord.Member):
 @Barbote.command()
 @commands.has_role(535096760389861396)
 async def checkall(ctx):
+    """Check and update all the users
+    Uasage : chackall
+    """
     members = ctx.guild.members
     c = 0
     e = 0
