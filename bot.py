@@ -168,7 +168,7 @@ async def check(user, rows):
                         from this categorie""")
                     b = False
             else:
-                if not rl[0] in roles:
+                if not (rl[0] in roles):
                     # Add cat to user's roles
                     cat = user.guild.get_role(rl[0])
                     s = 'Adding {0} for {1}'.format(cat, user)
