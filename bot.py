@@ -15,13 +15,12 @@ log.addHandler(handler)
 
 loop = asyncio.get_event_loop()
 
+Ghakid = 175392863587139584
 act = discord.Activity(type=discord.ActivityType.playing, name=" watching my master developping me UwU")
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
-        activity=act)
+        activity=act, owner_id=Ghakid)
 
-Ghakid = 175392863587139584
-Ghakizu = Barbote.get_user(Ghakid)
 
 async def getallrows(connection):
     r = await connection.fetch('SELECT * FROM "429792212016955423";')
@@ -63,6 +62,7 @@ async def ping(ctx):
     m = await ctx.send("Pong!")
     ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
     await m.edit(content='Pong! Latency : {}ms'.format(int(ms)))
+    await ctx.send("Bot latency : {}ms".format(int(Barbote.latency * 1000))) 
 
 @Barbote.command()
 @commands.has_permissions(manage_roles=True)
