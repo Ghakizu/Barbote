@@ -15,11 +15,10 @@ log.addHandler(handler)
 
 loop = asyncio.get_event_loop()
 
-Ghakid = 175392863587139584
 act = discord.Activity(type=discord.ActivityType.playing, name=" watching my master developping me UwU")
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
-        activity=act, owner_id=Ghakid)
+        activity=act, owner_id=os.getenv('GHAKID', None))
 
 
 async def getallrows(connection):
@@ -190,7 +189,7 @@ async def getroles(user):
     return r
 
 try:
-    Barbote.run(os.environ['BARBOTETOKEN'], bot=True, reconnect=True)
+    Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
 except (HTTPException, LoginFailure) as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
