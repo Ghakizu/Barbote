@@ -19,10 +19,8 @@ act = discord.Activity(type=discord.ActivityType.playing, name='''gérer le
         serveur c'est compliqué un peu''')
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
-        activity=act, owner_id=os.getenv('GHAKID', None))
-owner = Barbote.get_user(Barbote.owner_id)
-welcome_channel = Barbote.get_channel(550105193476390924)
-
+        activity=act, owner_id=int(os.getenv('GHAKID', None)))
+owner = None
 
 async def getallrows(connection):
     b = await database.is_table(connection)
@@ -42,6 +40,7 @@ async def on_ready():
     print(Barbote.user.name)
     print(Barbote.user.id)
     print('--------------')
+    owner = Barbote.get_user(Barbote.owner_id) 
 
 @Barbote.event
 async def on_member_update(before, after):
@@ -60,7 +59,7 @@ async def on_message(message):
         return
     if type(message.channel) == discord.DMChannel or type(message.content) == discord.GroupChannel:
         m = "I received a message from : {0}#{1}\nIt said : {2}".format(message.author.name, message.author.discriminator, message.content)
-        await Barbote.owner.dm_channel.send(m)
+        await owner.dm_channel.send(m)
     await Barbote.process_commands(message)
 
 @Barbote.event
@@ -144,6 +143,11 @@ async def checkall(ctx):
     await ctx.send("""Done!\n Checked {} members succesfully\n{} Bots found\n
     Failed to check {} members""".format(c, b, e))
 
+@Barbote.command()
+@commands.is_owner()
+async def say(ctx, channel:discord.TextChannel, *, message):
+    await channel.send(message)
+
 async def addroles(ctx, cat, roles):
     # Add in Postgresql
     b = await database.is_table(conn)
@@ -223,9 +227,7 @@ async def stafftestperms(user, before, after):
     log.info(s)
 
 try:
-    TOKEN = "NTM0ODU2NDAxMzc4NDc2MDQy.D23-kA.nfAuXZlp7GbytrSKpLRNBvLcfio"
-    Barbote.run(TOKEN, bot=True)
-    #Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
+    Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
 except KeyboardInterrupt as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
