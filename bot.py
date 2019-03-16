@@ -15,17 +15,25 @@ log.addHandler(handler)
 
 loop = asyncio.get_event_loop()
 
-act = discord.Activity(type=discord.ActivityType.playing, name=" watching my master developping me UwU")
+act = discord.Activity(type=discord.ActivityType.playing, name='''gérer le
+        serveur c'est compliqué un peu''')
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
         activity=act, owner_id=os.getenv('GHAKID', None))
+owner = Barbote.get_user(Barbote.owner_id)
+welcome_channel = Barbote.get_channel(550105193476390924)
 
 
 async def getallrows(connection):
-    r = await connection.fetch('SELECT * FROM "429792212016955423";')
-    return r 
+    b = await database.is_table(connection)
+    if b:
+        r = await connection.fetch('SELECT * FROM categories;')
+        return r 
+    return None
 
 conn = loop.run_until_complete(database.connect())
+if(conn is None):
+    raise Exception("Can't connect to the database")
 rows = loop.run_until_complete(getallrows(conn))
 
 @Barbote.event
@@ -37,8 +45,14 @@ async def on_ready():
 
 @Barbote.event
 async def on_member_update(before, after):
-    if not after.bot and before.roles != after.roles:
+    if before.roles != after.roles:
         await check(after, rows)
+        await stafftestperms(after, before.roles, after.roles)
+
+@Barbote.event
+async def on_member_join(member):
+    if member.bot:
+        await botperms(member)
 
 @Barbote.event
 async def on_message(message):
@@ -46,7 +60,7 @@ async def on_message(message):
         return
     if type(message.channel) == discord.DMChannel or type(message.content) == discord.GroupChannel:
         m = "I received a message from : {0}#{1}\nIt said : {2}".format(message.author.name, message.author.discriminator, message.content)
-        await Barbote.Ghakizu.dm_channel.send(m)
+        await Barbote.owner.dm_channel.send(m)
     await Barbote.process_commands(message)
 
 @Barbote.event
@@ -56,7 +70,7 @@ async def on_command_error(ctx, error):
 
 @Barbote.command()
 async def ping(ctx):
-    """Do I really need to explain this ?
+    """Ping me
     """
     m = await ctx.send("Pong!")
     ms = (m.created_at-ctx.message.created_at).total_seconds() * 1000
@@ -67,10 +81,9 @@ async def ping(ctx):
 @commands.has_permissions(manage_roles=True)
 async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
     """Set a list of roles for a category of roles
+    Usage : setrole category roles*
     """
-    if ctx.guild.id != 429792212016955423:
-        await ctx.send('This command is not implemented for this server.')
-    elif cat is not None and len(roles) > 0:
+    if cat is not None and len(roles) > 0:
         print("Number of roles to add : {}".format(len(roles)))
         for x in roles:
             print("{} : {}".format(x, x.id))
@@ -97,6 +110,7 @@ async def setrole(ctx, cat:discord.Role, *roles:discord.Role):
 @commands.has_permissions(manage_roles=True)
 async def checkuser(ctx, user:discord.Member):
     """Check and update an user
+    Usage : checkuser user
     """
     await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
@@ -107,79 +121,83 @@ async def checkuser(ctx, user:discord.Member):
         await ctx.send('There is an error\n Exit code : {0}'.format(r))
 
 @Barbote.command()
-@commands.has_role(535096760389861396)
+@commands.is_owner()
 async def checkall(ctx):
     """Check and update all the users
     Uasage : chackall
     """
     members = ctx.guild.members
     c = 0
+    b = 0
     e = 0
     for member in members:
         try:
             await ctx.send('Checking {0}...'.format(member.mention))
-            await check(member, rows)
-            c += 1
+            a = await check(member, rows)
+            if(not a):
+                b += 1
+            c+= 1
         except Exception as s:
             await ctx.send('Failed to check {0}\n{1}'.format(member.mention, s))
             e += 1
             pass
-    await ctx.send("""Done!\n Checked {0} members succesfully\n Failed to check {1}
-            members""".format(c, e))
+    await ctx.send("""Done!\n Checked {} members succesfully\n{} Bots found\n
+    Failed to check {} members""".format(c, b, e))
 
 async def addroles(ctx, cat, roles):
     # Add in Postgresql
     b = await database.is_table(conn)
     if b == False:
         await database.create_table(conn)
-    print('Inserting element...')
     rolesid = []
     for role in roles:
         rolesid.append(role.id)
     await conn.execute('''
-            INSERT INTO "429792212016955423"(cat, roles)
+            INSERT INTO categories(cat, roles)
             VALUES($1, $2)
             ON CONFLICT (cat)
-            DO UPDATE SET roles = array_merge("429792212016955423".roles, $2)''',
+            DO UPDATE SET roles = array_merge(categories.roles, $2)''',
             cat, rolesid)
-    print('Inserted')
+    log.info("")
 
 async def check(user, rows):
     if user.bot:
-        raise Exception("{0} is a bot".format(user.mention))
+        await botperms(user)
     roles = await getroles(user)
-    try:
-        i = 0
-        b = True
-        while i < len(rows) and b:
-            rl = rows[i]
-            j = 0
-            l = rl[1]
-            while j < len(l) and not l[j] in roles:
-                j += 1
-            if j >= len(l):
-                if rl[0] in roles:
-                    # Delete cat to user's roles
-                    cat = user.guild.get_role(rl[0])
-                    s = 'Deleting {0} for {1}'.format(cat, user)
-                    log.info(s)
-                    await user.remove_roles(cat, reason="""This user have no roles 
-                        from this categorie""")
-                    b = False
-            else:
-                if not (rl[0] in roles):
-                    # Add cat to user's roles
-                    cat = user.guild.get_role(rl[0])
-                    s = 'Adding {0} for {1}'.format(cat, user)
-                    log.info(s)
-                    await user.add_roles(cat, reason="""This user have roles 
-                        from this categorie""")
-                    b = False
-            i += 1
-        return 1
-    except Exception as e:
-        print(e)
-        return 0
+    i = 0
+    b = True
+    while i < len(rows) and b:
+        rl = rows[i]
+        j = 0
+        l = rl[1]
+        while j < len(l) and not l[j] in roles:
+            j += 1
+        if j >= len(l):
+            if rl[0] in roles:
+                # Delete cat of user's roles
+                cat = user.guild.get_role(rl[0])
+                s = 'Deleting {0} for {1}'.format(cat, user)
+                log.info(s)
+                await user.remove_roles(cat, reason="""This user have no roles 
+                    from this categorie""")
+                b = False
+        else:
+            if not (rl[0] in roles):
+                # Add cat of user's roles
+                cat = user.guild.get_role(rl[0])
+                s = 'Adding {0} for {1}'.format(cat, user)
+                log.info(s)
+                await user.add_roles(cat, reason="""This user have roles 
+                    from this categorie""")
+                b = False
+        i += 1
+    return 1
+
+async def botperms(bot):
+    botrole = bot.guild.get_role(430147158331883523)
+    if (not botrole in bot.roles):
+        await bot.add_roles(botrole, reason="This is a bot")
+        log.info("Added role {} to {}".format(botrole.name, bot.name))
 
 async def getroles(user):
     roles = user.roles
@@ -188,10 +206,29 @@ async def getroles(user):
         r.append(role.id)
     return r
 
+async def stafftestperms(user, before, after):
+    testrole = user.guild.get_role(521377232858644491)
+    modid = user.guild.get_channel(440271400641495052)
+    animid = user.guild.get_channel(520749286187728896)
+    s = "{} is not in training period".format(user.name)
+    if (testrole in after and not testrole in before):
+        s = "Overwriting permissions of {} during the training period".format(user.name)
+        overwrite = discord.PremissionOverwrite(read_messages=False)
+        await Barbote.modid.set_permissisons(uesr, overwrite=overwrite,
+                reason=s)
+        await Babote.modid.set_permissions(user, overwrite=overwrite, reason=s)
+    elif (not testrole in after and testrole in before):
+        s = "Deleting overwrite for {}. Training period is over".format(user.name)
+        await Babote.moid.set_permissions(user, overwrite=None, reason=s)
+    log.info(s)
+
 try:
-    Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
-except (HTTPException, LoginFailure) as e:
+    TOKEN = "NTM0ODU2NDAxMzc4NDc2MDQy.D23-kA.nfAuXZlp7GbytrSKpLRNBvLcfio"
+    Barbote.run(TOKEN, bot=True)
+    #Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
+except KeyboardInterrupt as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
 finally:
     loop.run_until_complete(database.disconnect(conn))
+    loop.close()

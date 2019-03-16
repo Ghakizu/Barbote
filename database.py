@@ -3,7 +3,7 @@ from configparser import ConfigParser
 import asyncpg
 import asyncio
 
-def config(filename='database.ini', section='postgresql'):
+def config(filename='config/database.ini', section='postgresql'):
     # create a parser
     parser = ConfigParser()
     # read config file
@@ -22,6 +22,7 @@ def config(filename='database.ini', section='postgresql'):
 
 async def connect():
     """ Connect to the PostgreSQL database server """
+    print("connection")
     conn = None
     try:
         # read connection parameters
@@ -53,13 +54,13 @@ async def create_table(connection):
         print('Creating the table...')
         await connection.execute(
                 '''
-                CREATE TABLE "429792212016955423" 
+                CREATE TABLE categories 
                 (
                     cat BIGINT PRIMARY KEY, -- ||
                     roles   BIGINT ARRAY
                 );
                 ''')
-        print('Table 429792212016955423 created')
+        print('Table categories created')
 
 async def is_table(connection):
     if connection.is_closed():
@@ -71,7 +72,7 @@ async def is_table(connection):
         (
             SELECT 1
             FROM pg_tables
-            WHERE tablename = '429792212016955423' 
+            WHERE tablename = 'categories'
         );
         ''')
         return r[0]
