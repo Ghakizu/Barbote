@@ -13,8 +13,6 @@ handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w'
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 log.addHandler(handler)
 
-loop = asyncio.get_event_loop()
-
 activity_name = "gérer le serveur c'est compliqué un peu"
 act = discord.Activity(type=discord.ActivityType.playing, name=activity_name)
 
@@ -44,10 +42,10 @@ async def getallrows(connection):
         return r 
     return None
 
-conn = loop.run_until_complete(database.connect())
+conn = Barbote.loop.run_until_complete(database.connect())
 if(conn is None):
     raise Exception("Can't connect to the database")
-rows = loop.run_until_complete(getallrows(conn))
+rows = Barbote.loop.run_until_complete(getallrows(conn))
 
 @Barbote.event
 async def on_ready():
@@ -248,10 +246,11 @@ def get_owner():
     return Barbote.get_user(Barbote.owner_id)
 
 try:
-    Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
+    Barbote.loop.run_until_complete(Barbote.start(os.getenv('BARBOTETOKEN',
+        None), bot=True, reconnect=True))
 except KeyboardInterrupt as e:
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
 finally:
-    loop.run_until_complete(database.disconnect(conn))
-    loop.close()
+    Barbote.loop.run_until_complete(database.disconnect(conn))
+    Barbote.close()
