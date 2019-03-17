@@ -15,12 +15,27 @@ log.addHandler(handler)
 
 loop = asyncio.get_event_loop()
 
-act = discord.Activity(type=discord.ActivityType.playing, name='''gérer le
-        serveur c'est compliqué un peu''')
+activity_name = "gérer le serveur c'est compliqué un peu"
+act = discord.Activity(type=discord.ActivityType.playing, name=activity_name)
+
+def get_prefix(bot, message):
+    """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
+
+    # Notice how you can use spaces in prefixes. Try to keep them simple though.
+    prefixes = ['>?', '!?']
+
+    # Check to see if we are outside of a guild. e.g DM's etc.
+    if not message.guild:
+        # Only allow ? to be used in DMs
+        return '?'
+
+    # If we are in a guild, we allow for the user to mention us or use any of the prefixes in our list.
+    return commands.when_mentioned_or(*prefixes)(bot, message)
+
+
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
         activity=act, owner_id=int(os.getenv('GHAKID', None)))
-owner = None
 
 async def getallrows(connection):
     b = await database.is_table(connection)
@@ -59,7 +74,9 @@ async def on_message(message):
         return
     if type(message.channel) == discord.DMChannel or type(message.content) == discord.GroupChannel:
         m = "I received a message from : {0}#{1}\nIt said : {2}".format(message.author.name, message.author.discriminator, message.content)
-        await owner.dm_channel.send(m)
+        if(not get_owner().dm_channel):
+            await get_owner().create_dm()
+        await get_owner().dm_channel.send(m)
     await Barbote.process_commands(message)
 
 @Barbote.event
@@ -217,14 +234,18 @@ async def stafftestperms(user, before, after):
     s = "{} is not in training period".format(user.name)
     if (testrole in after and not testrole in before):
         s = "Overwriting permissions of {} during the training period".format(user.name)
-        overwrite = discord.PremissionOverwrite(read_messages=False)
-        await Barbote.modid.set_permissisons(uesr, overwrite=overwrite,
+        overwrite = discord.PermissionOverwrite(read_messages=False)
+        await modid.set_permissions(user, overwrite=overwrite,
                 reason=s)
-        await Babote.modid.set_permissions(user, overwrite=overwrite, reason=s)
+        await animid.set_permissions(user, overwrite=overwrite, reason=s)
     elif (not testrole in after and testrole in before):
         s = "Deleting overwrite for {}. Training period is over".format(user.name)
-        await Babote.moid.set_permissions(user, overwrite=None, reason=s)
+        await modid.set_permissions(user, overwrite=None, reason=s)
+        await animid.set_permissions(user, overwrite=None, reason=s)
     log.info(s)
+
+def get_owner():
+    return Barbote.get_user(Barbote.owner_id)
 
 try:
     Barbote.run(os.getenv('BARBOTETOKEN', None), bot=True, reconnect=True)
