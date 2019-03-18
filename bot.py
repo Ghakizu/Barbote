@@ -35,6 +35,8 @@ Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
         activity=act, owner_id=int(os.getenv('GHAKID', None)))
 
+barbotechannel = Barbote.get_channel(534851504386080818)
+
 async def getallrows(connection):
     b = await database.is_table(connection)
     if b:
@@ -53,7 +55,6 @@ async def on_ready():
     print(Barbote.user.name)
     print(Barbote.user.id)
     print('--------------')
-    owner = Barbote.get_user(Barbote.owner_id) 
 
 @Barbote.event
 async def on_member_update(before, after):
@@ -249,8 +250,9 @@ try:
     Barbote.loop.run_until_complete(Barbote.start(os.getenv('BARBOTETOKEN',
         None), bot=True, reconnect=True))
 except KeyboardInterrupt as e:
+    barbotechannel.send("I'm loging out !")
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
 finally:
     Barbote.loop.run_until_complete(database.disconnect(conn))
-    Barbote.close()
+    Barbote.loop.close()
