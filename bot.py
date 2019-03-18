@@ -20,7 +20,7 @@ def get_prefix(bot, message):
     """A callable Prefix for our bot. This could be edited to allow per server prefixes."""
 
     # Notice how you can use spaces in prefixes. Try to keep them simple though.
-    prefixes = ['>?', '!?']
+    prefixes = ['>?', '?!']
 
     # Check to see if we are outside of a guild. e.g DM's etc.
     if not message.guild:
@@ -34,8 +34,6 @@ def get_prefix(bot, message):
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
         I'm here to manage the role banner""",
         activity=act, owner_id=int(os.getenv('GHAKID', None)))
-
-barbotechannel = Barbote.get_channel(534851504386080818)
 
 async def getallrows(connection):
     b = await database.is_table(connection)
@@ -72,10 +70,15 @@ async def on_message(message):
     if message.author.bot:
         return
     if type(message.channel) == discord.DMChannel or type(message.content) == discord.GroupChannel:
-        m = "I received a message from : {0}#{1}\nIt said : {2}".format(message.author.name, message.author.discriminator, message.content)
+        embed = discord.Embed()
+        embed.title = message.content
+        embed.timestamp = message.created_at
+        embed.set_author(icon_url=message.author.avatar_url,
+                name=str(message.author))
+        embed.color = discord.Colour.dark_orange()
         if(not get_owner().dm_channel):
             await get_owner().create_dm()
-        await get_owner().dm_channel.send(m)
+        await get_owner().dm_channel.send(content="Message received!", embed=embed)
     await Barbote.process_commands(message)
 
 @Barbote.event
@@ -246,11 +249,14 @@ async def stafftestperms(user, before, after):
 def get_owner():
     return Barbote.get_user(Barbote.owner_id)
 
+def get_barbotechannel():
+    return Barbote.get_channel(534851504386080818)
+
 try:
     Barbote.loop.run_until_complete(Barbote.start(os.getenv('BARBOTETOKEN',
         None), bot=True, reconnect=True))
 except KeyboardInterrupt as e:
-    barbotechannel.send("I'm loging out !")
+    Barbote.loop.run_until_complete(get_barbotechannel().send("I'm loging out!"))
     Barbote.loop.run_until_complete(Barbote.logout())
     log.fatal(e)
 finally:
