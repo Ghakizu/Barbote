@@ -32,7 +32,7 @@ def get_prefix(bot, message):
 
 
 Barbote = commands.Bot(command_prefix="?!", description="""Hello I'm Barbote !\n
-        I'm here to manage the role banner""",
+        I'm role management bot""",
         activity=act, owner_id=int(os.getenv('GHAKID', None)))
 
 async def getallrows(connection):
