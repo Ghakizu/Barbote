@@ -9,7 +9,8 @@ import os
 
 log = logging.getLogger('discord')
 log.setLevel(logging.INFO)
-handler = logging.FileHandler(filename='discord.log', encoding='utf-8', mode='w')
+handler = logging.FileHandler(filename='discord.log',
+        encoding='utf-8', mode='w')
 handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
 log.addHandler(handler)
 
@@ -69,7 +70,7 @@ async def on_member_join(member):
 async def on_message(message):
     if message.author.bot:
         return
-    if type(message.channel) == discord.DMChannel or type(message.content) == discord.GroupChannel:
+    if type(message.channel) == discord.DMChannel or type(message.content) ==  discord.GroupChannel:
         embed = discord.Embed()
         embed.title = message.content
         embed.timestamp = message.created_at
@@ -78,7 +79,8 @@ async def on_message(message):
         embed.color = discord.Colour.dark_orange()
         if(not get_owner().dm_channel):
             await get_owner().create_dm()
-        await get_owner().dm_channel.send(content="Message received!", embed=embed)
+        await get_owner().dm_channel.send(content="Message received!",
+                embed=embed)
     await Barbote.process_commands(message)
 
 @Barbote.event
@@ -231,17 +233,19 @@ async def getroles(user):
 
 async def stafftestperms(user, before, after):
     testrole = user.guild.get_role(521377232858644491)
-    modid = user.guild.get_channel(440271400641495052)
-    animid = user.guild.get_channel(520749286187728896)
+    modid = user.guild.get_channel(556901618835128470)
+    animid = user.guild.get_channel(556615951005777920)
     s = "{} is not in training period".format(user.name)
     if (testrole in after and not testrole in before):
-        s = "Overwriting permissions of {} during the training period".format(user.name)
+        s = "Overwriting permissions of {} during the training period".format(
+                user.name)
         overwrite = discord.PermissionOverwrite(read_messages=False)
         await modid.set_permissions(user, overwrite=overwrite,
                 reason=s)
         await animid.set_permissions(user, overwrite=overwrite, reason=s)
     elif (not testrole in after and testrole in before):
-        s = "Deleting overwrite for {}. Training period is over".format(user.name)
+        s = "Deleting overwrite for {}. Training period is over".format(
+                user.name)
         await modid.set_permissions(user, overwrite=None, reason=s)
         await animid.set_permissions(user, overwrite=None, reason=s)
     log.info(s)
