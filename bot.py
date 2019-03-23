@@ -6,6 +6,13 @@ import database
 import asyncio
 import asyncpg
 import os
+import signal
+
+# Stop the programm when a SIGTERM is received
+def handle_sigterm(*args):
+    raise KeyboardInterrupt()
+
+signal.signal(signal.SIGTERM, handle_sigterm)
 
 log = logging.getLogger('discord')
 log.setLevel(logging.INFO)
@@ -217,6 +224,32 @@ async def check(user, rows):
                 b = False
         i += 1
     return 1
+
+@Barbote.command()
+@command.guild_only()
+async def serverinfo(ctx):
+    embed = discord.Embed()
+    embed.title = ctx.guild.name
+    embed.set_thumbnail(ctx.guild.icon)
+    embed.color = discoord.Colour.dark_orange()
+    embed.add_field(name="Date de création", value=ctx.guild.created_at)
+    members, bots = member_count(ctx.guild.members)
+    embed.add_field(name="Nombre de membres",
+            value=members-bots)
+    embed.add_field(name="Nombre de bots", value=bots, inline=True)
+    embed.add_field(name="Nombre de salons écrit",
+            value=len(ctx.guild.text_channels))
+    embed.add_field(name="Nombre de salons vocaux",
+            value=len(ctx.guild.voice_channels), inline=True)
+    embed.add_field(name="Nombre de roles", value=len(ctx.guild.roles))
+
+def member_count(members):
+    c, b = 0, 0
+    for x in members:
+        if x.bot:
+            b += 1
+        c += 1
+    return c, b
 
 async def botperms(bot):
     botrole = bot.guild.get_role(430147158331883523)
