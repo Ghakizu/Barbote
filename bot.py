@@ -242,6 +242,7 @@ async def serverinfo(ctx):
     embed.add_field(name="Nombre de salons vocaux",
             value=len(ctx.guild.voice_channels), inline=True)
     embed.add_field(name="Nombre de roles", value=len(ctx.guild.roles))
+    await ctx.send(content=None, embed=embed)
 
 def member_count(members):
     c, b = 0, 0
