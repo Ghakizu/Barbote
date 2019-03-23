@@ -226,12 +226,12 @@ async def check(user, rows):
     return 1
 
 @Barbote.command()
-@command.guild_only()
+@commands.guild_only()
 async def serverinfo(ctx):
     embed = discord.Embed()
     embed.title = ctx.guild.name
-    embed.set_thumbnail(ctx.guild.icon)
-    embed.color = discoord.Colour.dark_orange()
+    embed.set_thumbnail(url=ctx.guild.icon_url)
+    embed.color = discord.Colour.dark_orange()
     embed.add_field(name="Date de création", value=ctx.guild.created_at)
     members, bots = member_count(ctx.guild.members)
     embed.add_field(name="Nombre de membres",
