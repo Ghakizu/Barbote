@@ -141,11 +141,10 @@ async def checkuser(ctx, user:discord.Member):
     """
     await ctx.send("Checking {0}...".format(user.mention))
     async with ctx.channel.typing():
-       r =  await check(user, rows)
-    if r:
+        r = await check(user, rows)
+        if (not r):
+            await ctx.send('{} is a bot'.format(user.mention))
         await ctx.send('Done!')
-    else:
-        await ctx.send('There is an error\n Exit code : {0}'.format(r))
 
 @Barbote.command()
 @commands.is_owner()
@@ -195,6 +194,7 @@ async def addroles(ctx, cat, roles):
 async def check(user, rows):
     if user.bot:
         await botperms(user)
+        return 0
     roles = await getroles(user)
     i = 0
     b = True
