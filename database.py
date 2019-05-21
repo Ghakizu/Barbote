@@ -46,33 +46,3 @@ async def disconnect(connection):
             print('Database connection closed')
         except Exception as error:
             print(error)
-
-async def create_table(connection):
-    if connection.is_closed():
-        raise Exception("The connection is closed")
-    else:
-        print('Creating the table...')
-        await connection.execute(
-                '''
-                CREATE TABLE categories 
-                (
-                    cat BIGINT PRIMARY KEY, -- ||
-                    roles   BIGINT ARRAY
-                );
-                ''')
-        print('Table categories created')
-
-async def is_table(connection):
-    if connection.is_closed():
-        raise Exception("The connection is closed")
-    else:
-        print('Checking if the table exist...')
-        r = await connection.fetchrow('''
-        SELECT EXISTS
-        (
-            SELECT 1
-            FROM pg_tables
-            WHERE tablename = 'categories'
-        );
-        ''')
-        return r[0]
